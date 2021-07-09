@@ -1,0 +1,69 @@
+---
+- name: Raise Ticket to SNOW (Testing)
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    open_ticket: true
+    close_ticket: true
+
+
+  tasks:
+
+  - name: Open a ServiceNow Change
+    block:
+      - name: raise change
+        snow_record:
+          username: "{{ snow_username }}"
+          password: "{{ snow_password }}"
+          instance: "{{ snow_instance }}"
+          state: present
+          table: sc_request
+          data: 
+            work_notes: Test Change Only
+            short_desc:  Raising a Change from Ansible
+
+        register: snow_var
+        delegate_to: localhost
+
+
+
+      - name: Show Service Now Ticket
+        debug:
+          var: snow_var.record.number
+
+      - set_fact:
+          change_num: "{{ snow_var.record.number }}"
+
+    when: open_ticket == true
+
+  - name: Close Servie Now Ticket
+
+    block:
+      # - name: Update ServieNow & Mark as Review
+      #   snow_record:
+      #     username: "{{ snow_username }}"
+      #     password: "{{ snow_password }}"
+      #     instance: "{{ snow_instance }}"
+      #     state: present
+      #     table: sc_request
+      #     number: "{{ change_num }}"
+      #     data:
+      #       work_notes: "Setting as Review (0)"
+      #       state: 0
+      #   delegate_to: localhost
+
+      - name: Update ServieNow & Mark as Closed
+        snow_record:
+          username: "{{ snow_username }}"
+          password: "{{ snow_password }}"
+          instance: "{{ snow_instance }}"
+          state: present
+          table: sc_request
+          number: "{{ change_num }}"
+          data:
+            work_notes: "Setting as Closed (3)"
+            state: 3
+        delegate_to: localhost
+
+    when: close_ticket == true

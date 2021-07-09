@@ -1,0 +1,87 @@
+---
+- name: Raise Ticket to SNOW (Testing)
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    open_ticket: true
+    close_ticket: true
+
+
+  tasks:
+
+  - name: Open a ServiceNow Incident
+    block:
+      - name: Create Incident
+        snow_record:
+          username:  "{{ snow_username }}"
+          password:  "{{ snow_password }}"
+          instance:  "{{ snow_instance }}"
+          state: present
+          table: incident
+          data:
+            short_description: "Test Incident Only"
+            severity: 3
+            priority: 2
+            caller_id: "System Administrator"
+            comments: "{{ drive_summary }}"
+        register: snow_var
+        delegate_to: localhost
+
+        vars:
+          drive_summary: |
+            This is some text in the incident 
+            It is for demonstration purposes
+
+
+      - name: OUTPUT OF INCIDENT NUMBER
+        debug:
+          var: snow_var.record.number
+
+      - set_fact:
+          incident_num: "{{ snow_var.record.number }}"
+
+    when: open_ticket == true
+
+##############
+
+## remediation actions could go here..
+## If successful we can close the snow ticket.
+
+## if they are not successful, we can elevate the ticket..etc
+
+##############
+
+
+  - name: Close Servie Now Ticket
+
+    block:
+      - name: Update ServieNow & Mark as Resolved
+        snow_record:
+          username:  "{{ snow_username }}"
+          password:  "{{ snow_password }}"
+          instance:  "{{ snow_instance }}"
+          state: present
+          table: incident
+          number: "{{ incident_num }}"
+          data:
+            work_notes: "The Problem was successfully remediated.  Marking the incident as resolved"
+            state: 6
+        delegate_to: localhost
+
+      - name: Update ServieNow & Mark as Closed
+        snow_record:
+          username:  "{{ snow_username }}"
+          password:  "{{ snow_password }}"
+          instance:  "{{ snow_instance }}"
+          state: present
+          table: incident
+          number: "{{ incident_num }}"
+          data:
+            work_notes: "Marking the incident as Closed"
+            state: 7
+        delegate_to: localhost
+
+    when: close_ticket == true
+
+  
